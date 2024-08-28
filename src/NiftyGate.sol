@@ -18,7 +18,6 @@ contract NiftyGate is ERC721, Ownable {
     }
 
     struct Ruleset {
-        string name;
         bool isActive;
         uint256 ruleCount;
         mapping(uint256 => Rule) rules;
@@ -26,7 +25,7 @@ contract NiftyGate is ERC721, Ownable {
 
     mapping(uint256 => Ruleset) private _rulesets;
 
-    event RulesetCreated(uint256 indexed rulesetId, string name, address owner);
+    event RulesetCreated(uint256 indexed rulesetId, address owner);
     event RulesetRemoved(uint256 indexed rulesetId);
     event RuleAdded(uint256 indexed rulesetId, uint256 ruleIndex, RuleType ruleType, address erc721Contract, uint256 param1, uint256 param2);
     event RuleRemoved(uint256 indexed rulesetId, uint256 ruleIndex);
@@ -35,39 +34,46 @@ contract NiftyGate is ERC721, Ownable {
         _nextTokenId = 1;
     }
 
-    function createRuleset(string memory _name) external onlyOwner returns (uint256) {
-        uint256 newRulesetId = _nextTokenId++;
+    modifier onlyRulesetOwner(uint256 _rulesetId) {
+        require(ownerOf(_rulesetId) == msg.sender, "Not the owner of this ruleset");
+        _;
+    }
+
+    modifier onlyActiveRuleset(uint256 _rulesetId) {
+        require(_rulesets[_rulesetId].isActive, "Ruleset is not active");
+        _;
+    }
+
+    /**
+     * Create a new ruleset and mint a new NFT to authorise the bearer to administer it
+     */
+    function createRuleset() external returns (uint256) {
+        uint256 newRulesetId = _nextTokenId;
 
         Ruleset storage newRuleset = _rulesets[newRulesetId];
-        newRuleset.name = _name;
         newRuleset.isActive = true;
         newRuleset.ruleCount = 0;
 
         _safeMint(msg.sender, newRulesetId);
+        _nextTokenId ++;
 
-        emit RulesetCreated(newRulesetId, _name, msg.sender);
+        emit RulesetCreated(newRulesetId, msg.sender);
         return newRulesetId;
     }
 
-    function removeRuleset(uint256 _rulesetId) external {
-        require(ownerOf(_rulesetId) == msg.sender, "Not the owner of this ruleset");
-        require(_rulesets[_rulesetId].isActive, "Ruleset is not active");
+   function removeRuleset(uint256 _rulesetId) external onlyRulesetOwner(_rulesetId) onlyActiveRuleset(_rulesetId) {
         _rulesets[_rulesetId].isActive = false;
         emit RulesetRemoved(_rulesetId);
     }
 
-    function addRule(uint256 _rulesetId, RuleType _ruleType, address _erc721Contract, uint256 _param1, uint256 _param2) external {
-        require(ownerOf(_rulesetId) == msg.sender, "Not the owner of this ruleset");
-        require(_rulesets[_rulesetId].isActive, "Ruleset is not active");
-
+    function addRule(uint256 _rulesetId, RuleType _ruleType, address _erc721Contract, uint256 _param1, uint256 _param2) external onlyRulesetOwner(_rulesetId) onlyActiveRuleset(_rulesetId) {
         uint256 newRuleIndex = _rulesets[_rulesetId].ruleCount;
         _rulesets[_rulesetId].rules[newRuleIndex] = Rule(_ruleType, _erc721Contract, _param1, _param2);
         _rulesets[_rulesetId].ruleCount++;
         emit RuleAdded(_rulesetId, newRuleIndex, _ruleType, _erc721Contract, _param1, _param2);
     }
 
-    function removeRule(uint256 _rulesetId, uint256 _ruleIndex) external {
-        require(ownerOf(_rulesetId) == msg.sender, "Not the owner of this ruleset");
+    function removeRule(uint256 _rulesetId, uint256 _ruleIndex) external onlyRulesetOwner(_rulesetId) {
         require(_ruleIndex < _rulesets[_rulesetId].ruleCount, "Rule does not exist");
 
         if (_ruleIndex < _rulesets[_rulesetId].ruleCount - 1) {
@@ -78,9 +84,7 @@ contract NiftyGate is ERC721, Ownable {
         emit RuleRemoved(_rulesetId, _ruleIndex);
     }
 
-    function checkRuleset(uint256 _rulesetId, address _user) external view returns (bool) {
-        require(_rulesets[_rulesetId].isActive, "Ruleset is not active");
-
+    function checkRuleset(uint256 _rulesetId, address _user) external view onlyActiveRuleset(_rulesetId) returns (bool) {
         Ruleset storage ruleset = _rulesets[_rulesetId];
         for (uint i = 0; i < ruleset.ruleCount; i++) {
             if (!checkRule(_user, ruleset.rules[i])) {
@@ -164,10 +168,5 @@ contract NiftyGate is ERC721, Ownable {
             rules[i] = ruleset.rules[i];
         }
         return rules;
-    }
-
-    function getRulesetName(uint256 _rulesetId) external view returns (string memory) {
-        require(_rulesets[_rulesetId].isActive, "Ruleset is not active");
-        return _rulesets[_rulesetId].name;
     }
 }
