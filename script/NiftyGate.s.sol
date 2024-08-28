@@ -5,16 +5,17 @@ import {Script, console} from "forge-std/Script.sol";
 import {NiftyGate} from "../src/NiftyGate.sol";
 
 contract NiftyGateScript is Script {
-    NiftyGate public counter;
+    NiftyGate public niftyGate;
 
-    function setUp() public {
-        vm.startPrank(address(this));
-    }
+    function setUp() public {}
 
     function run() public {
-        vm.startBroadcast();
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerAddress = vm.addr(deployerPrivateKey);
 
-        counter = new NiftyGate(address(this));
+        vm.startBroadcast(deployerPrivateKey);
+
+        niftyGate = new NiftyGate(deployerAddress);
 
         vm.stopBroadcast();
     }
