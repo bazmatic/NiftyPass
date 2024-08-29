@@ -9,7 +9,7 @@ contract NiftyGate is ERC721, Ownable {
     uint256 private _nextTokenId;
     uint256 private _deletedCount;
 
-    enum RuleType { OwnsCount, OwnsAnyOf, OwnsId }
+    enum RuleType { OwnsCount, OwnsCountOf, OwnsId }
 
     struct Rule {
         RuleType ruleType;
@@ -122,27 +122,29 @@ contract NiftyGate is ERC721, Ownable {
         IERC721 erc721 = IERC721(_rule.erc721Contract);
         uint256 balance = erc721.balanceOf(_user);
 
-        // If the user does not own any tokens, they do not meet the rule
         if (balance == 0) {
             return false;
         }
 
         if (_rule.ruleType == RuleType.OwnsCount) {
-            // The number of tokens is greater than or equal to the required number
             return balance >= _rule.params[0];
         } else if (_rule.ruleType == RuleType.OwnsId) {
-            // The user owns the specified token
             try erc721.ownerOf(_rule.params[0]) returns (address owner) {
                 return owner == _user;
             } catch {
                 return false;
             }
-        } else if (_rule.ruleType == RuleType.OwnsAnyOf) {
-            // Check if the user owns any of the specified token IDs
-            for (uint256 i = 0; i < _rule.params.length; i++) {
+        } else if (_rule.ruleType == RuleType.OwnsCountOf) {
+            require(_rule.params.length > 1, "Invalid params for OwnsCountOf");
+            uint256 requiredCount = _rule.params[0];
+            uint256 ownedCount = 0;
+            for (uint256 i = 1; i < _rule.params.length; i++) {
                 try erc721.ownerOf(_rule.params[i]) returns (address owner) {
                     if (owner == _user) {
-                        return true;
+                        ownedCount++;
+                        if (ownedCount >= requiredCount) {
+                            return true;
+                        }
                     }
                 } catch {
                     // If the token doesn't exist, continue to the next one

@@ -140,22 +140,30 @@ contract NiftyGateTest is Test {
         assertEq(niftyGate.getRulesetCount(), 2);
     }
 
-    function testOwnsAnyOfRule() public {
+   function testOwnsCountOfRule() public {
         vm.startPrank(owner);
         uint256 rulesetId = niftyGate.createRuleset();
-        uint256[] memory params = new uint256[](3);
-        params[0] = 5;
-        params[1] = 10;
-        params[2] = 15;
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsAnyOf, address(mockNFT), params);
+        uint256[] memory params = new uint256[](4);
+        params[0] = 2; // Require ownership of 2 tokens from the list
+        params[1] = 5;
+        params[2] = 10;
+        params[3] = 15;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCountOf, address(mockNFT), params);
         vm.stopPrank();
 
         mockNFT.mint(user, 1);
-        mockNFT.mint(user, 2);
-        mockNFT.mint(user, 10);
-
+        mockNFT.mint(user, 5);
+        
         bool result = niftyGate.checkRuleset(rulesetId, user);
-        assertTrue(result);
+        assertFalse(result); // User only owns 1 token from the list, needs 2
+
+        mockNFT.mint(user, 10);
+        result = niftyGate.checkRuleset(rulesetId, user);
+        assertTrue(result); // Now user owns 2 tokens from the list
+
+        mockNFT.mint(user, 15);
+        result = niftyGate.checkRuleset(rulesetId, user);
+        assertTrue(result); // User still meets the criteria
     }
 
     function testCheckRulesetWithMultipleRules() public {
@@ -214,17 +222,18 @@ contract NiftyGateTest is Test {
     function testRuleTypes() public {
         vm.startPrank(owner);
         uint256 rulesetId = niftyGate.createRuleset();
-        
+
         uint256[] memory countParams = new uint256[](1);
         countParams[0] = 2;
         niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), countParams);
-        
-        uint256[] memory anyOfParams = new uint256[](3);
-        anyOfParams[0] = 5;
-        anyOfParams[1] = 7;
-        anyOfParams[2] = 10;
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsAnyOf, address(mockNFT), anyOfParams);
-        
+
+        uint256[] memory countOfParams = new uint256[](4);
+        countOfParams[0] = 2; // Require ownership of 2 tokens from the list
+        countOfParams[1] = 5;
+        countOfParams[2] = 7;
+        countOfParams[3] = 10;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCountOf, address(mockNFT), countOfParams);
+
         uint256[] memory idParams = new uint256[](1);
         idParams[0] = 15;
         niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsId, address(mockNFT), idParams);
@@ -232,6 +241,7 @@ contract NiftyGateTest is Test {
 
         mockNFT.mint(user, 1);
         mockNFT.mint(user, 2);
+        mockNFT.mint(user, 5);
         mockNFT.mint(user, 7);
         mockNFT.mint(user, 15);
 
