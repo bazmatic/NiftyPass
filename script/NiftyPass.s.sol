@@ -2,10 +2,10 @@
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
-import {NiftyGate} from "../src/NiftyGate.sol";
+import {NiftyPass} from "../src/NiftyPass.sol";
 
-contract NiftyGateScript is Script {
-    NiftyGate public niftyGate;
+contract NiftyPassScript is Script {
+    NiftyPass public niftyPass;
 
     function setUp() public {}
 
@@ -15,7 +15,7 @@ contract NiftyGateScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        niftyGate = new NiftyGate(deployerAddress);
+        niftyPass = new NiftyPass(deployerAddress);
 
         vm.stopBroadcast();
     }

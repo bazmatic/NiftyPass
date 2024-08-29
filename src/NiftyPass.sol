@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract NiftyGate is ERC721, Ownable {
+contract NiftyPass is ERC721, Ownable {
     uint256 private _nextTokenId;
     uint256 private _deletedCount;
 
@@ -30,7 +30,7 @@ contract NiftyGate is ERC721, Ownable {
     event RuleAdded(uint256 indexed rulesetId, uint256 ruleIndex, RuleType ruleType, address erc721Contract, uint256[] params);
     event RuleRemoved(uint256 indexed rulesetId, uint256 ruleIndex);
 
-    constructor(address initialOwner) ERC721("NiftyGate", "NFTG") Ownable(initialOwner) {
+    constructor(address initialOwner) ERC721("NiftyPass", "NFTG") Ownable(initialOwner) {
         _nextTokenId = 1;
         _deletedCount = 0;
     }
