@@ -14,7 +14,7 @@ contract NiftyPass is ERC721, Ownable {
     struct Rule {
         RuleType ruleType;
         address erc721Contract;
-        uint256[] params; // Changed to array to accommodate multiple token IDs
+        uint256[] params;
     }
 
     struct Ruleset {
