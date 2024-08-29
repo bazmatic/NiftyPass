@@ -30,7 +30,7 @@ contract NiftyPass is ERC721, Ownable {
     event RuleAdded(uint256 indexed rulesetId, uint256 ruleIndex, RuleType ruleType, address erc721Contract, uint256[] params);
     event RuleRemoved(uint256 indexed rulesetId, uint256 ruleIndex);
 
-    constructor(address initialOwner) ERC721("NiftyPass", "NFTG") Ownable(initialOwner) {
+    constructor(address initialOwner) ERC721("NiftyPass", "NFTP") Ownable(initialOwner) {
         _nextTokenId = 1;
         _deletedCount = 0;
     }
