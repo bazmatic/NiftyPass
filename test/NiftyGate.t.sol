@@ -18,7 +18,6 @@ contract NiftyGateTest is Test {
     MockERC721 public mockNFT;
     address public owner = address(1);
     address public user = address(2);
-    address public user2 = address(3);
 
     function setUp() public {
         vm.startPrank(owner);
@@ -37,7 +36,9 @@ contract NiftyGateTest is Test {
     function testAddRule() public {
         vm.startPrank(owner);
         uint256 rulesetId = niftyGate.createRuleset();
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 1, 100);
+        uint256[] memory params = new uint256[](1);
+        params[0] = 1;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), params);
         NiftyGate.Rule[] memory rules = niftyGate.getRulesetRules(rulesetId);
         assertEq(rules.length, 1);
         assertEq(uint(rules[0].ruleType), uint(NiftyGate.RuleType.OwnsCount));
@@ -46,32 +47,48 @@ contract NiftyGateTest is Test {
 
     function testCheckRuleset() public {
         vm.startPrank(owner);
+
         uint256 rulesetId = niftyGate.createRuleset();
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 1, 100);
-        vm.stopPrank();
+        uint256[] memory params = new uint256[](1);
+        params[0] = 2;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), params);
 
         mockNFT.mint(user, 1);
-        
+
         bool result = niftyGate.checkRuleset(rulesetId, user);
+        assertFalse(result);
+
+        mockNFT.mint(user, 2);
+        result = niftyGate.checkRuleset(rulesetId, user);
         assertTrue(result);
+
+        vm.stopPrank();
     }
 
     function testRemoveRule() public {
         vm.startPrank(owner);
+
         uint256 rulesetId = niftyGate.createRuleset();
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 1, 100);
+        uint256[] memory params = new uint256[](1);
+        params[0] = 1;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), params);
         niftyGate.removeRule(rulesetId, 0);
         NiftyGate.Rule[] memory rules = niftyGate.getRulesetRules(rulesetId);
         assertEq(rules.length, 0);
+
         vm.stopPrank();
     }
 
     function testRemoveRuleset() public {
         vm.startPrank(owner);
+
         uint256 rulesetId = niftyGate.createRuleset();
         niftyGate.removeRuleset(rulesetId);
-        uint256[] memory activeRulesetIds = niftyGate.getActiveRulesets();
-        assertEq(activeRulesetIds.length, 0);
+        assertEq(niftyGate.getRulesetCount(), 0);
+
+        vm.expectRevert("Ruleset does not exist");
+        niftyGate.getRulesetRules(rulesetId);
+
         vm.stopPrank();
     }
 
@@ -79,9 +96,12 @@ contract NiftyGateTest is Test {
         vm.prank(owner);
         uint256 rulesetId = niftyGate.createRuleset();
 
+        uint256[] memory params = new uint256[](1);
+        params[0] = 1;
+
         vm.expectRevert("Not the owner of this ruleset");
         vm.prank(user);
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 1, 100);
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), params);
 
         vm.expectRevert("Not the owner of this ruleset");
         vm.prank(user);
@@ -97,12 +117,15 @@ contract NiftyGateTest is Test {
 
         assertEq(niftyGate.ownerOf(rulesetId), user);
 
+        uint256[] memory params = new uint256[](1);
+        params[0] = 1;
+
         vm.prank(user);
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 1, 100);
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), params);
 
         vm.expectRevert("Not the owner of this ruleset");
         vm.prank(owner);
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 1, 100);
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), params);
     }
 
     function testMultipleRulesets() public {
@@ -117,16 +140,40 @@ contract NiftyGateTest is Test {
         assertEq(niftyGate.getRulesetCount(), 2);
     }
 
-    function testCheckRulesetWithMultipleRules() public {
+    function testOwnsAnyOfRule() public {
         vm.startPrank(owner);
         uint256 rulesetId = niftyGate.createRuleset();
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 2, 100);
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsId, address(mockNFT), 5, 0);
+        uint256[] memory params = new uint256[](3);
+        params[0] = 5;
+        params[1] = 10;
+        params[2] = 15;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsAnyOf, address(mockNFT), params);
         vm.stopPrank();
 
         mockNFT.mint(user, 1);
         mockNFT.mint(user, 2);
+        mockNFT.mint(user, 10);
+
+        bool result = niftyGate.checkRuleset(rulesetId, user);
+        assertTrue(result);
+    }
+
+    function testCheckRulesetWithMultipleRules() public {
+        vm.startPrank(owner);
+        uint256 rulesetId = niftyGate.createRuleset();
         
+        uint256[] memory countParams = new uint256[](1);
+        countParams[0] = 2;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), countParams);
+        
+        uint256[] memory idParams = new uint256[](1);
+        idParams[0] = 5;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsId, address(mockNFT), idParams);
+        vm.stopPrank();
+
+        mockNFT.mint(user, 1);
+        mockNFT.mint(user, 2);
+
         bool result = niftyGate.checkRuleset(rulesetId, user);
         assertFalse(result); // User doesn't own token ID 5
 
@@ -135,12 +182,52 @@ contract NiftyGateTest is Test {
         assertTrue(result); // Now user satisfies both rules
     }
 
+    function testOwnsCountRule() public {
+        vm.startPrank(owner);
+        uint256 rulesetId = niftyGate.createRuleset();
+        uint256[] memory params = new uint256[](1);
+        params[0] = 2;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), params);
+        vm.stopPrank();
+
+        mockNFT.mint(user, 1);
+        mockNFT.mint(user, 2);
+
+        bool result = niftyGate.checkRuleset(rulesetId, user);
+        assertTrue(result);
+    }
+
+    function testOwnsIdRule() public {
+        vm.startPrank(owner);
+        uint256 rulesetId = niftyGate.createRuleset();
+        uint256[] memory params = new uint256[](1);
+        params[0] = 5;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsId, address(mockNFT), params);
+        vm.stopPrank();
+
+        mockNFT.mint(user, 5);
+
+        bool result = niftyGate.checkRuleset(rulesetId, user);
+        assertTrue(result);
+    }
+
     function testRuleTypes() public {
         vm.startPrank(owner);
         uint256 rulesetId = niftyGate.createRuleset();
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 2, 100);
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsAnyOf, address(mockNFT), 5, 10);
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsId, address(mockNFT), 15, 0);
+        
+        uint256[] memory countParams = new uint256[](1);
+        countParams[0] = 2;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), countParams);
+        
+        uint256[] memory anyOfParams = new uint256[](3);
+        anyOfParams[0] = 5;
+        anyOfParams[1] = 7;
+        anyOfParams[2] = 10;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsAnyOf, address(mockNFT), anyOfParams);
+        
+        uint256[] memory idParams = new uint256[](1);
+        idParams[0] = 15;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsId, address(mockNFT), idParams);
         vm.stopPrank();
 
         mockNFT.mint(user, 1);
@@ -152,30 +239,18 @@ contract NiftyGateTest is Test {
         assertTrue(result); // User satisfies all three rule types
     }
 
-    function testGetActiveRulesets() public {
-        vm.startPrank(owner);
-        uint256 rulesetId1 = niftyGate.createRuleset(); 
-        uint256 rulesetId2 = niftyGate.createRuleset();
-        uint256 rulesetId3 = niftyGate.createRuleset(); 
-        niftyGate.removeRuleset(rulesetId2);
-        vm.stopPrank();
-
-        uint256[] memory activeRulesets = niftyGate.getActiveRulesets();
-        assertEq(activeRulesets.length, 2);
-        assertEq(activeRulesets[0], rulesetId1);
-        assertEq(activeRulesets[1], rulesetId3);
-    }
-
     function testRulesetActivation() public {
         vm.startPrank(owner);
         uint256 rulesetId = niftyGate.createRuleset();
-        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), 1, 100);
+        uint256[] memory params = new uint256[](1);
+        params[0] = 1;
+        niftyGate.addRule(rulesetId, NiftyGate.RuleType.OwnsCount, address(mockNFT), params);
         niftyGate.removeRuleset(rulesetId);
         vm.stopPrank();
 
         mockNFT.mint(user, 1);
 
-        vm.expectRevert("Ruleset is not active");
+        vm.expectRevert("Ruleset does not exist");
         niftyGate.checkRuleset(rulesetId, user);
     }
 }
