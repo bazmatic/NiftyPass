@@ -1,66 +1,75 @@
-## Foundry
+# NiftyPass
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## Overview
 
-Foundry consists of:
+**NiftyPass** is a robust and flexible ERC721-based toolkit designed to secure systems using configurable rules centered around NFT ownership. By leveraging the power of Non-Fungible Tokens (NFTs), NiftyPass allows developers to define and manage access control mechanisms, ensuring that only authorized users with specific NFT holdings can interact with certain parts of your application or smart contracts.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Features
 
-## Documentation
+- **ERC721 Integration**: NiftyPass is built on the ERC721 standard, ensuring compatibility with a wide range of NFT marketplaces and wallets.
+- **Configurable Rulesets**: Define complex access control rules based on NFT ownership, including:
+  - **OwnsCount**: Requires a user to own a minimum number of NFTs from a specified collection.
+  - **OwnsId**: Requires a user to own a specific NFT by its token ID.
+  - **OwnsCountOf**: Requires a user to own a certain number of NFTs from a list of specified token IDs.
+- **Ruleset Management**: Create, modify, and remove rulesets with ease. Each ruleset is represented by an NFT, granting the bearer authority to administer it.
+- **Access Control Modifiers**: Ensure that only authorized owners can modify rulesets and rules.
+- **Event Emissions**: Track changes and actions within the contract through emitted events for transparency and off-chain integrations.
 
-https://book.getfoundry.sh/
+## Getting Started
+
+### Prerequisites
+
+- **Foundry**: A blazing-fast toolkit for Ethereum development.
+- **Solidity ^0.8.0**: Ensure your environment supports Solidity version 0.8.0 or higher.
+- **OpenZeppelin Contracts**: Utilized for secure and community-vetted implementations of ERC721 and other standards.
+
+### Installation
+
+1. **Clone the Repository**
+
+   ```bash
+   git clone https://github.com/yourusername/NiftyPass.git
+   cd NiftyPass
+   ```
+
+2. **Install Dependencies**
+
+   NiftyPass relies on Foundry and OpenZeppelin Contracts. Install them using Foundry's package manager.
+
+   ```bash
+   forge install OpenZeppelin/openzeppelin-contracts
+   ```
 
 ## Usage
 
-### Build
+### Building the Project
 
-```shell
-$ forge build
+Compile the smart contracts using Forge:
+
+```bash
+forge build
 ```
 
-### Test
 
-```shell
-$ forge test
+### Testing
+
+Run the test suite:
+
+```bash
+forge test
 ```
 
-### Format
 
-```shell
-$ forge fmt
+### Deploying NiftyPass
+
+Deploy the `NiftyPass` contract using Foundry scripts:
+
+```bash
+forge script script/Deploy.s.sol:Deploy --rpc-url <your_rpc_url> --private-key <your_private_key>
 ```
 
-### Gas Snapshots
+Replace `<your_rpc_url>` with your Ethereum network URL and `<your_private_key>` with your Ethereum private key.
 
-```shell
-$ forge snapshot
-```
+### Interacting with NiftyPass
 
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+TODO
