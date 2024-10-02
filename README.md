@@ -50,7 +50,6 @@ Compile the smart contracts using Forge:
 forge build
 ```
 
-
 ### Testing
 
 Run the test suite:
@@ -58,7 +57,6 @@ Run the test suite:
 ```bash
 forge test
 ```
-
 
 ### Deploying NiftyPass
 
